@@ -137,3 +137,49 @@ class Attendance(models.Model):
 
     class Meta:
         unique_together = ("student", "date")
+
+
+class GradingBand(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    min_mark = models.DecimalField(max_digits=5, decimal_places=2)
+    max_mark = models.DecimalField(max_digits=5, decimal_places=2)
+    level_code = models.CharField(max_length=5)
+    descriptor = models.CharField(max_length=60)
+    remark = models.CharField(max_length=100)
+    points = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-min_mark"]
+
+    def __str__(self):
+        return f"{self.level_code} ({self.min_mark}-{self.max_mark})"
+
+
+class ReportComment(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="report_comments")
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name="report_comments")
+    class_teacher_comment = models.TextField(blank=True)
+    head_teacher_comment = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("student", "term")
+
+class Guardian(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20)
+    students = models.ManyToManyField(Student, related_name="guardians", blank=True)
+
+    def __str__(self):
+        return self.full_name
+
+
+class ParentLink(models.Model):
+    parent = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="child_links",
+    )
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="parent_links")
+    verified_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("parent", "student")
