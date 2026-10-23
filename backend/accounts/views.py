@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from school.phone import normalise_kenyan_phone
 
 User = get_user_model()
 
@@ -33,8 +34,10 @@ class LoginView(APIView):
                 status=400,
             )
 
+        # Parents log in with their phone number in any Kenyan format.
+        phone = normalise_kenyan_phone(identifier)
         user = User.objects.filter(
-            Q(username=identifier) | Q(email__iexact=identifier)
+            Q(username=identifier) | Q(username=phone or identifier) | Q(email__iexact=identifier)
         ).first()
 
         if user is None or not user.check_password(password):
