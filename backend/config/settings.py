@@ -153,3 +153,13 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+# Password reset emails. In development they print in the backend terminal.
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.console.EmailBackend",
+    },
+}
+DEFAULT_FROM_EMAIL = "Escuela <no-reply@escuela.local>"
+FRONTEND_URL = "http://localhost:3000"
+
