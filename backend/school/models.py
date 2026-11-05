@@ -42,6 +42,7 @@ class Student(models.Model):
     current_class = models.ForeignKey(Class, null=True, blank=True, on_delete=models.SET_NULL)
     address = models.TextField(blank=True)
     nationality = models.CharField(max_length=60, blank=True)
+    email = models.EmailField(blank=True)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="student_profile",
@@ -164,6 +165,23 @@ class ReportComment(models.Model):
     class Meta:
         unique_together = ("student", "term")
 
+class TeacherProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="teacher_profile",
+    )
+    date_of_birth = models.DateField()
+    employee_number = models.CharField(max_length=30, unique=True)
+    tsc_number = models.CharField(max_length=30, unique=True)
+    national_id = models.CharField(max_length=20, unique=True)
+    address = models.TextField(blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    bank_account = models.CharField(max_length=40, blank=True)
+    consent_given = models.BooleanField(default=False)
+    consent_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Profile of {self.user.full_name}"
+    
 class Guardian(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=150)

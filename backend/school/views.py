@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -21,6 +22,10 @@ def find_unclaimed_student(reg_no, date_of_birth):
     return Student.objects.filter(
         reg_no=reg_no, date_of_birth=date_of_birth, user__isnull=True
     ).select_related("current_class").first()
+
+
+def email_taken(email):
+    return User.objects.filter(Q(username=email) | Q(email__iexact=email)).exists()
 
 
 class StudentLookupView(APIView):
@@ -54,6 +59,13 @@ class StudentActivateView(APIView):
         if not student:
             return Response({"detail": NOT_FOUND}, status=status.HTTP_404_NOT_FOUND)
 
+        email = data["email"].strip().lower()
+        if email_taken(email):
+            return Response(
+                {"detail": "This email is already used by another account. Please use a different email."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             validate_password(data["password"])
         except DjangoValidationError as exc:
@@ -63,6 +75,7 @@ class StudentActivateView(APIView):
             user = User.objects.create_user(
                 username=student.reg_no,
                 password=data["password"],
+                email=email,
                 role="student",
                 approval_status="approved",
                 full_name=student.full_name,
@@ -71,6 +84,7 @@ class StudentActivateView(APIView):
             # Only the student's own details change. The class is never touched here.
             student.address = data.get("address", student.address)
             student.nationality = data.get("nationality", student.nationality)
+            student.email = email
             student.user = user
             student.save()
 

@@ -27,6 +27,7 @@ class LoginView(APIView):
     def post(self, request):
         identifier = str(request.data.get("identifier", "")).strip()
         password = str(request.data.get("password", ""))
+        expected_role = str(request.data.get("role", "")).strip()
 
         if not identifier or not password:
             return Response(
@@ -44,6 +45,16 @@ class LoginView(APIView):
             return Response(
                 {"detail": "Incorrect email, registration number, or password."},
                 status=401,
+            )
+
+        # Each role has its own login page. Tell the user which one to use.
+        if expected_role and user.role != expected_role:
+            return Response(
+                {"detail": (
+                    f"This is the {expected_role} login. Your account is a {user.role} account, "
+                    f"so please use the {user.role} login."
+                )},
+                status=403,
             )
 
         if not user.is_active:

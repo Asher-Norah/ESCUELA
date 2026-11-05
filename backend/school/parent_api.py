@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,15 +14,24 @@ class IsParent(BasePermission):
 
 
 def linked_students(user):
-    return Student.objects.filter(parent_links__parent=user).distinct().order_by("full_name")
+    """Every child this parent can see: linked directly at sign-up or by the admin,
+    or listed on a guardian record with the same phone number as their account."""
+    return (
+        Student.objects.filter(
+            Q(parent_links__parent=user) | Q(guardians__phone=user.username)
+        )
+        .select_related("current_class")
+        .distinct()
+        .order_by("full_name")
+    )
 
 
 def student_for_request(request):
     """Returns the child chosen in ?student_id=, if the parent is linked to them."""
     children = linked_students(request.user)
     chosen = request.query_params.get("student_id")
-    if chosen:
-        return children.filter(pk=chosen).first()
+    if chosen and chosen.isdigit():
+        return children.filter(pk=int(chosen)).first()
     return children.first()
 
 

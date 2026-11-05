@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -29,6 +30,7 @@ def clean_name(value):
 class ParentSignUpSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
     phone = serializers.CharField(max_length=20)
+    email = serializers.EmailField(max_length=254)
     student_reg_no = serializers.CharField(max_length=20)
     password = serializers.CharField(write_only=True, min_length=8)
     profile_image = serializers.ImageField()
@@ -74,6 +76,13 @@ class ParentSignUpView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        email = data["email"].strip().lower()
+        if User.objects.filter(Q(username=email) | Q(email__iexact=email)).exists():
+            return Response(
+                {"detail": "This email is already used by another account. Please use a different email."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             validate_password(data["password"])
         except DjangoValidationError as exc:
@@ -83,6 +92,7 @@ class ParentSignUpView(APIView):
             user = User.objects.create_user(
                 username=phone,
                 password=data["password"],
+                email=email,
                 role="parent",
                 approval_status="approved",
                 full_name=guardian.full_name,

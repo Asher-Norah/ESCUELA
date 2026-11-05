@@ -11,6 +11,7 @@ class StudentLookupSerializer(serializers.Serializer):
 
 class StudentActivateSerializer(StudentLookupSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    email = serializers.EmailField(max_length=254)
     address = serializers.CharField(required=False, allow_blank=True)
     nationality = serializers.CharField(required=False, allow_blank=True, max_length=60)
     profile_image = serializers.ImageField()
